@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dompetku — Catatan Keuangan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-watermark" aria-hidden="true">Mana</div>
+  <div class="auth-card">
+    <div class="auth-brand">
+      <span class="auth-brand-mark">Mana</span>
+      <span class="auth-brand-name">Dompetku</span>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm" class="auth-form">
+      <h1>Masuk ke akun Anda</h1>
+      <p class="auth-sub">Catat pemasukan dan pengeluaran dengan rapi.</p>
+
+      <label class="field">
+        <span>Nama pengguna</span>
+        <input type="text" id="loginUsername" autocomplete="username" required>
+      </label>
+      <label class="field">
+        <span>Kata sandi</span>
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
+      </label>
+
+      <p id="loginError" class="form-error" role="alert"></p>
+
+      <button type="submit" class="btn btn-primary">Masuk</button>
+      <p class="auth-switch">Belum punya akun? <button type="button" id="showRegister" class="link-btn">Daftar sekarang</button></p>
+    </form>
+
+    <!-- REGISTER FORM -->
+    <form id="registerForm" class="auth-form hidden">
+      <h1>Buat akun baru</h1>
+      <p class="auth-sub">Mulai kelola keuangan Anda hari ini.</p>
+
+      <label class="field">
+        <span>Nama lengkap</span>
+        <input type="text" id="registerName" required>
+      </label>
+      <label class="field">
+        <span>Nama pengguna</span>
+        <input type="text" id="registerUsername" autocomplete="username" required>
+      </label>
+      <label class="field">
+        <span>Kata sandi</span>
+        <input type="password" id="registerPassword" autocomplete="new-password" required minlength="4">
+      </label>
+
+      <p id="registerError" class="form-error" role="alert"></p>
+
+      <button type="submit" class="btn btn-primary">Daftar</button>
+      <p class="auth-switch">Sudah punya akun? <button type="button" id="showLogin" class="link-btn">Masuk</button></p>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MAIN APP SCREEN ============ -->
+<div id="appScreen" class="app-screen hidden">
+
+  <header class="topbar">
+    <div class="balance-box">
+      <span class="balance-label">Saldo Anda</span>
+      <span id="balanceAmount" class="balance-amount">Rp0</span>
+    </div>
+
+    <div class="brand-center">
+      <span class="brand-mark-small">Mana</span> Dompetku
+    </div>
+
+    <div class="profile-area">
+      <button id="settingsBtn" class="settings-btn" aria-label="Pengaturan Google Sheets" title="Hubungkan ke Google Sheets">⚙</button>
+      <button id="profileBtn" class="profile-circle" aria-haspopup="true" aria-expanded="false">
+        <span id="profileInitial">?</span>
+      </button>
+      <div id="profileDropdown" class="dropdown hidden">
+        <div class="dropdown-arrow"></div>
+        <p class="dropdown-name" id="ddName">—</p>
+        <dl class="dropdown-meta">
+          <dt>Pertama masuk</dt>
+          <dd id="ddFirstLogin">—</dd>
+          <dt>Terakhir masuk</dt>
+          <dd id="ddLastLogin">—</dd>
+        </dl>
+        <button id="logoutBtn" class="btn btn-outline btn-block">Keluar</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- CHART CARD -->
+    <section class="chart-card">
+      <button id="prevMonth" class="month-nav" aria-label="Bulan sebelumnya">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+
+      <div class="chart-body">
+        <h2 id="monthLabel" class="month-label">—</h2>
+        <div class="chart-area">
+          <div class="chart-gridline"></div>
+          <div class="bar-group">
+            <span class="bar-value" id="incomeBarValue">Rp0</span>
+            <div class="bar bar-income" id="incomeBar" style="height:2%"></div>
+            <span class="bar-caption">Pemasukan</span>
+          </div>
+          <div class="bar-group">
+            <span class="bar-value" id="expenseBarValue">Rp0</span>
+            <div class="bar bar-expense" id="expenseBar" style="height:2%"></div>
+            <span class="bar-caption">Pengeluaran</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="nextMonth" class="month-nav" aria-label="Bulan berikutnya">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </section>
+
+    <!-- SUMMARY CARDS -->
+    <section class="summary-grid">
+      <div class="card card-expense">
+        <div class="card-head">
+          <h3>Pengeluaran bulan ini</h3>
+          <p class="card-total" id="expenseTotal">Rp0</p>
+        </div>
+        <form id="expenseForm" class="add-form">
+          <label class="field">
+            <span>Jumlah (Rp)</span>
+            <input type="number" id="expenseAmount" min="1" step="1" placeholder="0" required>
+          </label>
+          <label class="field">
+            <span>Untuk apa</span>
+            <input type="text" id="expenseDesc" placeholder="Mis. Makan siang" required>
+          </label>
+          <button type="submit" class="btn btn-expense">+ Tambah pengeluaran</button>
+        </form>
+      </div>
+
+      <div class="card card-income">
+        <div class="card-head">
+          <h3>Pemasukan bulan ini</h3>
+          <p class="card-total" id="incomeTotal">Rp0</p>
+        </div>
+        <form id="incomeForm" class="add-form">
+          <label class="field">
+            <span>Jumlah (Rp)</span>
+            <input type="number" id="incomeAmount" min="1" step="1" placeholder="0" required>
+          </label>
+          <label class="field">
+            <span>Dari mana</span>
+            <input type="text" id="incomeDesc" placeholder="Mis. Gaji bulanan" required>
+          </label>
+          <button type="submit" class="btn btn-income">+ Tambah pemasukan</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- TRANSACTION LIST -->
+    <section class="tx-card">
+      <h3>Riwayat bulan ini</h3>
+      <ul id="txList" class="tx-list"></ul>
+      <p id="txEmpty" class="tx-empty hidden">Belum ada transaksi di bulan ini.</p>
+    </section>
+
+  </main>
+</div>
+
+<script src="script.js"></script>
+<div id="settingsModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3>Hubungkan ke Google Sheets</h3>
+    <p class="modal-desc">
+      Tempel di sini URL <strong>Web App</strong> hasil deploy Google Apps Script
+      yang terhubung ke Google Sheet Anda. Kosongkan lalu simpan untuk kembali
+      memakai penyimpanan lokal di perangkat ini.
+    </p>
+
+    <label class="modal-label">
+      URL Web App
+      <input type="url" id="sheetUrlInput" placeholder="https://script.google.com/macros/s/AKfycbyOjaiqlJI0Gox5x68ufJeSOfL-aV_Ttq442IaldSTh4fN187mmQcb0LSv_w2Qud11O1w/exec">
+    </label>
+
+    <p class="settings-status" id="settingsStatus"></p>
+
+    <div class="modal-actions">
+      <button id="closeSettings" class="btn-secondary" type="button">Tutup</button>
+      <button id="saveSheetUrl" class="btn-primary" type="button">Simpan &amp; Hubungkan</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
