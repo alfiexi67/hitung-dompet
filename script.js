@@ -14,6 +14,10 @@ const MONTH_NAMES = ['Januari','Februari','Maret','April','Mei','Juni','Juli','A
 
 let chartMonthOffset = 0; // 0 = bulan ini, negatif = bulan lalu
 
+// Flag global untuk mencegah double click pada pengiriman transaksi & navigasi grafik
+let isSubmittingTx = false;
+let isNavigatingChart = false;
+
 /* =========================================================
    KONEKSI GOOGLE SHEETS
    ========================================================= */
@@ -28,9 +32,6 @@ function isSheetMode(){
   return !!getSheetUrl();
 }
 
-// POST ke Apps Script Web App. Semua aksi (termasuk baca data) lewat
-// POST supaya username/hash password/token sesi tidak pernah nampang
-// di URL atau log server. Pakai text/plain supaya tidak kena preflight CORS.
 async function apiPost(action, payload = {}){
   const res = await fetch(getSheetUrl(), {
     method: 'POST',
@@ -45,8 +46,6 @@ async function apiPost(action, payload = {}){
 
 /* --------------------- keamanan password --------------------- */
 
-// Hash sederhana pakai SHA-256 bawaan browser, supaya password
-// tidak tersimpan/terkirim sebagai teks polos.
 async function hashPassword(password){
   const data = new TextEncoder().encode(password);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -76,8 +75,6 @@ function clearSession(){
   localStorage.removeItem(STORAGE_SESSION);
 }
 
-// Dipanggil kalau server bilang sesi/token sudah tidak valid lagi
-// (mis. setelah ganti URL Google Sheets, atau token kedaluwarsa).
 function forceLogoutInvalidSession(message){
   clearSession();
   appScreen.classList.add('hidden');
@@ -131,7 +128,6 @@ function formatRupiah(n){
   }).format(n).replace(/\s/g, '');
 }
 
-// format "hari,dd-mm-yyyy" contoh: Senin,14-09-2026
 function formatHariTanggal(isoString){
   const d = new Date(isoString);
   const hari = DAY_NAMES[d.getDay()];
@@ -141,7 +137,6 @@ function formatHariTanggal(isoString){
   return `${hari},${dd}-${mm}-${yyyy}`;
 }
 
-// format singkat untuk daftar transaksi, contoh: 14 Sep 2026
 function formatTanggalSingkat(isoString){
   const d = new Date(isoString);
   const bulanSingkat = MONTH_NAMES[d.getMonth()].slice(0, 3);
@@ -175,6 +170,11 @@ showLogin.addEventListener('click', () => {
 
 registerForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+  
+  const submitBtn = registerForm.querySelector('button[type="submit"]');
+  if(submitBtn && submitBtn.disabled) return; // Mencegah proses ganda jika sedang diklik
+  if(submitBtn) submitBtn.disabled = true;
+
   registerError.textContent = '';
 
   const name = document.getElementById('registerName').value.trim();
@@ -183,15 +183,14 @@ registerForm.addEventListener('submit', async (e) => {
 
   if(!name || !username || !password){
     registerError.textContent = 'Semua kolom wajib diisi.';
+    if(submitBtn) submitBtn.disabled = false;
     return;
   }
   if(password.length < 4){
     registerError.textContent = 'Kata sandi minimal 4 karakter.';
+    if(submitBtn) submitBtn.disabled = false;
     return;
   }
-
-  const submitBtn = registerForm.querySelector('button[type="submit"]');
-  if(submitBtn) submitBtn.disabled = true;
 
   const passwordHash = await hashPassword(password);
 
@@ -231,13 +230,15 @@ registerForm.addEventListener('submit', async (e) => {
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  const submitBtn = loginForm.querySelector('button[type="submit"]');
+  if(submitBtn && submitBtn.disabled) return; // Mencegah proses ganda jika sedang diklik
+  if(submitBtn) submitBtn.disabled = true;
+
   loginError.textContent = '';
 
   const username = document.getElementById('loginUsername').value.trim().toLowerCase();
   const password = document.getElementById('loginPassword').value;
-
-  const submitBtn = loginForm.querySelector('button[type="submit"]');
-  if(submitBtn) submitBtn.disabled = true;
 
   const passwordHash = await hashPassword(password);
 
@@ -309,8 +310,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Sekarang cukup baca dari sesi lokal — tidak perlu lagi minta
-// daftar semua pengguna ke server hanya untuk menampilkan profil.
 function renderProfile(){
   const session = loadSession();
   if(!session) return;
@@ -338,7 +337,7 @@ async function renderBalance(){
 
 function getOffsetDate(offset){
   const d = new Date();
-  d.setDate(1); // hindari masalah overflow tanggal saat ganti bulan
+  d.setDate(1);
   d.setMonth(d.getMonth() + offset);
   return d;
 }
@@ -375,19 +374,25 @@ async function renderChart(){
 }
 
 document.getElementById('prevMonth').addEventListener('click', async () => {
+  if(isNavigatingChart) return;
+  isNavigatingChart = true;
   chartMonthOffset -= 1;
   await renderChart();
+  isNavigatingChart = false;
 });
+
 document.getElementById('nextMonth').addEventListener('click', async () => {
+  if(isNavigatingChart) return;
   if(chartMonthOffset < 0){
+    isNavigatingChart = true;
     chartMonthOffset += 1;
     await renderChart();
+    isNavigatingChart = false;
   }
 });
 
 /* =========================================================
    RINGKASAN BULAN INI + DAFTAR TRANSAKSI
-   (selalu bulan berjalan, tidak terpengaruh navigasi grafik)
    ========================================================= */
 
 async function renderSummaryAndList(){
@@ -440,47 +445,59 @@ function escapeHtml(str){
 
 document.getElementById('expenseForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
   await addTransaction('expense',
     document.getElementById('expenseAmount'),
-    document.getElementById('expenseDesc'));
+    document.getElementById('expenseDesc'),
+    btn);
 });
 
 document.getElementById('incomeForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
   await addTransaction('income',
     document.getElementById('incomeAmount'),
-    document.getElementById('incomeDesc'));
+    document.getElementById('incomeDesc'),
+    btn);
 });
 
-async function addTransaction(type, amountInput, descInput){
+async function addTransaction(type, amountInput, descInput, submitBtn){
+  if(isSubmittingTx) return; // Mencegah masukan ganda saat transaksi diproses
+
   const amount = parseInt(amountInput.value, 10);
   const desc = descInput.value.trim();
   if(!amount || amount <= 0 || !desc) return;
 
-  const session = loadSession();
-  const tx = await loadTx(session);
+  isSubmittingTx = true;
+  if(submitBtn) submitBtn.disabled = true;
 
-  tx.push({
-    id: Date.now() + Math.random().toString(16).slice(2),
-    type,
-    amount,
-    desc,
-    date: new Date().toISOString()
-  });
-  await saveTx(session, tx);
+  try {
+    const session = loadSession();
+    const tx = await loadTx(session);
 
-  amountInput.value = '';
-  descInput.value = '';
+    tx.push({
+      id: Date.now() + Math.random().toString(16).slice(2),
+      type,
+      amount,
+      desc,
+      date: new Date().toISOString()
+    });
+    await saveTx(session, tx);
 
-  await renderBalance();
-  await renderChart();
-  await renderSummaryAndList();
+    amountInput.value = '';
+    descInput.value = '';
+
+    await renderBalance();
+    await renderChart();
+    await renderSummaryAndList();
+  } finally {
+    isSubmittingTx = false;
+    if(submitBtn) submitBtn.disabled = false;
+  }
 }
 
 /* =========================================================
    PENGATURAN — HUBUNGKAN KE GOOGLE SHEETS
-   Elemen-elemen ini opsional: kalau belum ada di index.html Anda,
-   blok ini otomatis dilewati tanpa error.
    ========================================================= */
 
 const settingsBtn      = document.getElementById('settingsBtn');
@@ -514,17 +531,19 @@ if(settingsBtn && settingsModal && sheetUrlInput && settingsStatus && saveSheetU
   });
 
   saveSheetUrlBtn.addEventListener('click', () => {
+    if(saveSheetUrlBtn.disabled) return;
+    saveSheetUrlBtn.disabled = true;
+
     const url = sheetUrlInput.value.trim();
 
     if(url && !url.startsWith('https://script.google.com/')){
       settingsStatus.textContent = 'URL ini sepertinya bukan URL Web App Google Apps Script yang valid.';
       settingsStatus.className = 'settings-status error';
+      saveSheetUrlBtn.disabled = false;
       return;
     }
 
     setSheetUrl(url);
-    // Ganti backend = token sesi lama sudah tidak relevan lagi,
-    // jadi minta pengguna masuk ulang di backend yang baru.
     clearSession();
     settingsStatus.textContent = url
       ? 'Tersimpan. Silakan masuk kembali untuk terhubung ke Google Sheets ini.'
@@ -536,6 +555,7 @@ if(settingsBtn && settingsModal && sheetUrlInput && settingsStatus && saveSheetU
     authScreen.classList.remove('hidden');
     loginForm.classList.remove('hidden');
     registerForm.classList.add('hidden');
+    saveSheetUrlBtn.disabled = false;
   });
 }
 
