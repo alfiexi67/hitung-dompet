@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mana Dompetku — Catatan Keuangan</title>
+<title>Dompetku — Catatan Keuangan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="icon" type="image/png" href="poto\icon.png">
 </head>
 <body>
 
@@ -108,8 +107,20 @@
       </button>
 
       <div class="chart-body">
-        <h2 id="monthLabel" class="month-label">—</h2>
-        <div class="chart-area">
+        <div class="chart-body-head">
+          <h2 id="monthLabel" class="month-label">—</h2>
+          <div class="chart-type-toggle" role="group" aria-label="Jenis grafik">
+            <button type="button" class="chart-type-btn active" id="chartTypeBar" data-type="bar" aria-pressed="true" title="Grafik batang">
+              <svg viewBox="0 0 24 24" width="17" height="17"><path d="M5 20V10M12 20V4M19 20v-7" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" class="chart-type-btn" id="chartTypeLine" data-type="line" aria-pressed="false" title="Grafik garis (tren saldo)">
+              <svg viewBox="0 0 24 24" width="17" height="17"><path d="M4 16l5-6 4 4 7-9" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- GRAFIK BATANG (pemasukan vs pengeluaran) -->
+        <div class="chart-area" id="barChartWrap">
           <div class="chart-gridline"></div>
           <div class="bar-group">
             <span class="bar-value" id="incomeBarValue">Rp0</span>
@@ -121,6 +132,17 @@
             <div class="bar bar-expense" id="expenseBar" style="height:2%"></div>
             <span class="bar-caption">Pengeluaran</span>
           </div>
+        </div>
+
+        <!-- GRAFIK GARIS (tren saldo harian) -->
+        <div class="line-chart-wrap hidden" id="lineChartWrap">
+          <svg id="lineChartSvg" viewBox="0 0 600 220" preserveAspectRatio="none"></svg>
+          <div class="chart-tooltip hidden" id="chartTooltip">
+            <span class="chart-tooltip-value" id="chartTooltipValue">Rp0</span>
+            <span class="chart-tooltip-date" id="chartTooltipDate">—</span>
+          </div>
+          <div class="line-chart-xlabels" id="lineChartXLabels"></div>
+          <p class="line-chart-empty hidden" id="lineChartEmpty">Belum ada data untuk ditampilkan.</p>
         </div>
       </div>
 
