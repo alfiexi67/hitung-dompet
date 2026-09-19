@@ -37,10 +37,10 @@ function setChartType(type){
    ========================================================= */
 
 function getSheetUrl(){
-  return (localStorage.getItem(STORAGE_SHEET_URL) || 'https://script.google.com/macros/s/AKfycbyOjaiqlJI0Gox5x68ufJeSOfL-aV_Ttq442IaldSTh4fN187mmQcb0LSv_w2Qud11O1w/exec').trim();
+  return (localStorage.getItem(STORAGE_SHEET_URL) || 'https://script.google.com/macros/s/AKfycbwXX4KH2L8UwcsXo-NnuwUW281dNhYrb2WIiI1g4YXE1ZxktBAbzV8II5HaXpzYieIsZw/exec').trim();
 }
 function setSheetUrl(url){
-  localStorage.setItem(STORAGE_SHEET_URL, (url || 'https://script.google.com/macros/s/AKfycbyOjaiqlJI0Gox5x68ufJeSOfL-aV_Ttq442IaldSTh4fN187mmQcb0LSv_w2Qud11O1w/exec').trim());
+  localStorage.setItem(STORAGE_SHEET_URL, (url || 'https://script.google.com/macros/s/AKfycbwXX4KH2L8UwcsXo-NnuwUW281dNhYrb2WIiI1g4YXE1ZxktBAbzV8II5HaXpzYieIsZw/exec').trim());
 }
 function isSheetMode(){
   return !!getSheetUrl();
