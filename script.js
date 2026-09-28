@@ -172,6 +172,63 @@ function formatTanggalPendek(d){
 }
 
 /* =========================================================
+   KODE PEMBELIAN
+   - ADMIN_MASTER_CODE: kode khusus Anda sendiri (pemilik produk),
+     tidak pernah "habis" dan tidak tersimpan di daftar kode biasa.
+     GANTI nilainya sebelum menjual produk ini, lalu simpan baik-baik.
+   - Kode biasa (untuk pembeli) disimpan di localStorage saat mode
+     offline, atau divalidasi lewat Google Sheets saat mode sheet
+     (lihat action 'register' di Apps Script Anda).
+   Catatan jujur: karena semua ini berjalan di browser pembeli,
+   kode di mode offline bisa saja dilihat lewat DevTools oleh
+   pengguna yang cukup paham teknis. Untuk penjualan sungguhan,
+   pakai mode Google Sheets (lebih di bawah) karena validasinya
+   terjadi di server Apps Script, bukan cuma di browser.
+   ========================================================= */
+
+const ADMIN_MASTER_CODE = 'ALIF-ADMIN-IDAMAN'; 
+
+const STORAGE_CODES = 'dompetku_purchase_codes';
+
+function loadCodes(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_CODES)) || {}; }
+  catch(e){ return {}; }
+}
+function saveCodes(codes){
+  localStorage.setItem(STORAGE_CODES, JSON.stringify(codes));
+}
+
+// Panggil dari console browser (F12) untuk membuat kode baru yang
+// bisa Anda kirim ke pembeli, mis: generatePurchaseCode()
+function generatePurchaseCode(){
+  const rand = () => Math.random().toString(36).slice(2, 6).toUpperCase();
+  const code = `MANA-${rand()}-${rand()}`;
+  const codes = loadCodes();
+  codes[code] = { used: false, usedBy: null };
+  saveCodes(codes);
+  console.log('Kode baru dibuat:', code);
+  return code;
+}
+
+// Mengecek & "memakai" kode pembelian. Mengembalikan { ok, message }.
+function redeemPurchaseCode(rawCode, username){
+  const code = (rawCode || '').trim().toUpperCase();
+  if(!code) return { ok: false, message: 'Kode pembelian wajib diisi.' };
+  if(code === ADMIN_MASTER_CODE.toUpperCase()){
+    return { ok: true, message: 'admin' };
+  }
+  const codes = loadCodes();
+  const entry = codes[code];
+  if(!entry) return { ok: false, message: 'Kode pembelian tidak ditemukan.' };
+  if(entry.used) return { ok: false, message: 'Kode pembelian ini sudah pernah dipakai.' };
+  entry.used = true;
+  entry.usedBy = username;
+  entry.usedAt = new Date().toISOString();
+  saveCodes(codes);
+  return { ok: true, message: 'ok' };
+}
+
+/* =========================================================
    AUTH
    ========================================================= */
 
@@ -203,8 +260,9 @@ registerForm.addEventListener('submit', async (e) => {
   const name = document.getElementById('registerName').value.trim();
   const username = document.getElementById('registerUsername').value.trim().toLowerCase();
   const password = document.getElementById('registerPassword').value;
+  const purchaseCode = document.getElementById('registerPurchaseCode').value;
 
-  if(!name || !username || !password){
+  if(!name || !username || !password || !purchaseCode){
     registerError.textContent = 'Semua kolom wajib diisi.';
     return;
   }
@@ -216,11 +274,23 @@ registerForm.addEventListener('submit', async (e) => {
   const submitBtn = registerForm.querySelector('button[type="submit"]');
   if(submitBtn) submitBtn.disabled = true;
 
+  // Mode offline: kode dicek & "dipakai" di browser ini.
+  // Mode Google Sheets: kode dikirim ke server dan dicek di sana
+  // (lihat fungsi doPost -> action 'register' di Apps Script Anda).
+  if(!isSheetMode()){
+    const codeCheck = redeemPurchaseCode(purchaseCode, username);
+    if(!codeCheck.ok){
+      registerError.textContent = codeCheck.message;
+      if(submitBtn) submitBtn.disabled = false;
+      return;
+    }
+  }
+
   const passwordHash = await hashPassword(password);
 
   try{
     if(isSheetMode()){
-      const result = await apiPost('register', { username, name, passwordHash });
+      const result = await apiPost('register', { username, name, passwordHash, purchaseCode: purchaseCode.trim().toUpperCase() });
       saveSession({
         username,
         name,
