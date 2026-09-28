@@ -391,141 +391,12 @@ input{
   flex: 1;
   padding: 6px 4px 0;
 }
-
-.chart-body-head{
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
-}
-
 .month-label{
   text-align: center;
   font-size: 1.15rem;
   font-weight: 600;
-  margin: 0;
+  margin-bottom: 14px;
   color: var(--ink-900);
-}
-
-/* ---- toggle jenis grafik (batang / garis) ---- */
-.chart-type-toggle{
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  gap: 2px;
-  background: var(--paper-100);
-  border-radius: 999px;
-  padding: 3px;
-}
-.chart-type-btn{
-  width: 32px; height: 32px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ink-600);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background .15s ease, color .15s ease;
-}
-.chart-type-btn:hover{ color: var(--blue-700); }
-.chart-type-btn.active{
-  background: var(--paper-0);
-  color: var(--blue-700);
-  box-shadow: 0 2px 6px -2px rgba(33,29,26,.25);
-}
-
-/* ---- grafik garis (tren saldo) ---- */
-.line-chart-wrap{
-  position: relative;
-  height: 220px;
-  padding-top: 4px;
-}
-.line-chart-wrap svg{
-  width: 100%;
-  height: 100%;
-  display: block;
-  overflow: visible;
-}
-.line-chart-path{
-  fill: none;
-  stroke: var(--blue-600);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.line-chart-path.is-negative{ stroke: var(--red-600); }
-.line-chart-area{
-  fill: url(#lineChartGradient);
-  stroke: none;
-}
-.line-chart-hover-line{
-  stroke: var(--ink-300);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-  opacity: 0;
-}
-.line-chart-hover-dot{
-  fill: var(--paper-0);
-  stroke: var(--blue-600);
-  stroke-width: 2.5;
-  opacity: 0;
-}
-.line-chart-hover-dot.is-negative{ stroke: var(--red-600); }
-.line-chart-hit-area{
-  fill: transparent;
-  cursor: crosshair;
-}
-
-.line-chart-xlabels{
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  padding: 0 2px;
-  font-size: .78rem;
-  font-weight: 600;
-  color: var(--ink-300);
-}
-
-.chart-tooltip{
-  position: absolute;
-  top: 6px;
-  transform: translateX(-50%);
-  background: var(--ink-900);
-  color: #fff;
-  border-radius: 10px;
-  padding: 7px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 8px 20px -6px rgba(33,29,26,.45);
-  z-index: 5;
-}
-.chart-tooltip-value{
-  font-weight: 700;
-  font-size: .92rem;
-  font-variant-numeric: tabular-nums;
-}
-.chart-tooltip-date{
-  font-size: .74rem;
-  color: var(--ink-300);
-}
-
-.line-chart-empty{
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink-300);
-  font-size: .9rem;
-  margin: 0;
 }
 
 .chart-area{
@@ -542,6 +413,109 @@ input{
   left: 0; right: 0; bottom: 34px;
   border-top: 1px dashed var(--paper-line);
 }
+
+/* ---- line chart (tren saldo) ---- */
+.line-chart-wrap{
+  position: relative;
+  width: 100%;
+}
+#lineChartSvg{
+  width: 100%;
+  height: 220px;
+  display: block;
+}
+.line-chart-path{
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.line-chart-area{
+  fill: url(#lineChartGradient);
+  stroke: none;
+}
+.line-chart-hover-line{
+  stroke: var(--ink-300);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0;
+  pointer-events: none;
+}
+.line-chart-hover-dot{
+  fill: #fff;
+  stroke-width: 2.5;
+  opacity: 0;
+  pointer-events: none;
+}
+.line-chart-hit-area{
+  fill: transparent;
+  cursor: crosshair;
+}
+.line-chart-xlabels{
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 0 4px;
+  font-size: .78rem;
+  color: var(--ink-300);
+}
+.line-chart-empty{
+  text-align: center;
+  color: var(--ink-300);
+  padding: 70px 0;
+}
+.chart-tooltip{
+  position: absolute;
+  top: 0;
+  transform: translate(-50%, -110%);
+  background: var(--ink-900);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: .78rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.chart-tooltip-value{
+  display: block;
+  font-weight: 700;
+}
+.chart-tooltip-date{
+  display: block;
+  font-size: .68rem;
+  opacity: .8;
+}
+
+/* tombol toggle jenis grafik (batang/garis) — juga belum ada style-nya */
+.chart-type-toggle{
+  display: inline-flex;
+  gap: 6px;
+}
+.chart-type-btn{
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid var(--paper-line);
+  background: var(--paper-0);
+  color: var(--ink-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chart-type-btn.active{
+  background: var(--blue-600);
+  border-color: var(--blue-600);
+  color: #fff;
+}
+.chart-body-head{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.chart-body-head .month-label{ margin-bottom: 0; }
 
 .bar-group{
   display: flex;
